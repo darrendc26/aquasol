@@ -9,6 +9,7 @@ pub struct Asset {
     pub pt_mint: Pubkey,
     pub yt_mint: Pubkey,
     pub total_tokens: u64,
+    pub expected_apy: u64,
     pub is_active: bool,
     pub oracle: Pubkey,
     pub yield_index: u64,

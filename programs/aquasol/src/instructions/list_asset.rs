@@ -28,6 +28,7 @@ pub fn list_asset_handler(
     token_mint: Pubkey,
     pt_mint: Pubkey, 
     yt_mint: Pubkey, 
+    expected_apy: u64,
     oracle: Pubkey, 
     duration: i64
 ) -> Result<()> {
@@ -38,6 +39,7 @@ pub fn list_asset_handler(
     asset.token_mint = token_mint;
     asset.pt_mint = pt_mint;
     asset.yt_mint = yt_mint;
+    asset.expected_apy = expected_apy;
     asset.total_tokens = 0;
     asset.is_active = true;
     asset.oracle = oracle;
