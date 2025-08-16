@@ -29,7 +29,7 @@ pub struct InitRegistry<'info> {
 pub fn init_registry_handler(ctx: Context<InitRegistry>) -> Result<()> {
     let registry = &mut ctx.accounts.registry;
     registry.admin = ctx.accounts.admin.key();
-    registry.liquid_mint = ctx.accounts.liquid_mint.key();
+    // registry.liquid_mint = ctx.accounts.liquid_mint.key();
     registry.fee_account = ctx.accounts.fee_account.key();
     registry.commission_bps = 300; // 3% commission 
     registry.bump = ctx.bumps.registry;
