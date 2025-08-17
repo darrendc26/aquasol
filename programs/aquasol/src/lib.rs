@@ -38,7 +38,7 @@ pub mod aquasol {
         mint_pt_handler(ctx, amount)
     }
 
-    // pub fn mint_yt(ctx: Context<MintYt>, amount: u64) -> Result<()> {
-    //     mint_yt_handler(ctx, amount)
-    // }
+    pub fn mint_yt(ctx: Context<MintYt>, amount: u64) -> Result<()> {
+        mint_yt_handler(ctx, amount)
+    }
 }

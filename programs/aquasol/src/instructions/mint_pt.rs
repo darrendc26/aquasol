@@ -101,9 +101,8 @@ pub fn mint_pt_handler(ctx: Context<MintPt>, amount: u64) -> Result<()> {
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
     mint_to(cpi_ctx, amount)?;
 
-    let yt_token_value = calculate_yt_token_value(amount, asset.maturity_ts, asset.expected_apy);
 
-    // To handle returning the token value and adding yt to amm later
+    // TODO: To handle swapping yt tokens for native tokens
 
     Ok(())
 }
