@@ -9,4 +9,12 @@ pub fn calculate_yt_token_value(yt_token_amount: u64, maturity_ts: i64, expected
     return yt_token_value;
 }
 
-// not complete
+
+pub fn calculate_pt_token_value(pt_token_amount: u64, maturity_ts: i64, expected_apy: u64) -> u64 {
+    let now = Clock::get().unwrap().unix_timestamp;
+    let time_remaining = (maturity_ts.checked_sub(now).unwrap()) as u64;
+    let mul = expected_apy.checked_mul(time_remaining).unwrap().checked_div(86400).unwrap();
+    let denominator = mul.checked_add(1).unwrap();
+    let pt_value = pt_token_amount.checked_div(denominator).unwrap();
+    return pt_value;
+}
