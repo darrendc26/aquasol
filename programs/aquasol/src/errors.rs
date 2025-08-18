@@ -8,4 +8,6 @@ pub enum ErrorCode {
     Inactive,
     #[msg("Asset has expired")]
     Expired,
+    #[msg("Asset is not matured")]
+    NotMatured,
 }
