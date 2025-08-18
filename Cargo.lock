@@ -265,6 +265,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "constant-product-amm",
 ]
 
 [[package]]
@@ -528,6 +529,15 @@ checksum = "e89f72f65e8501878b8a004d5a1afb780987e2ce2b4532c562e367a72c57499f"
 dependencies = [
  "log",
  "web-sys",
+]
+
+[[package]]
+name = "constant-product-amm"
+version = "0.1.0"
+source = "git+https://github.com/darrendc26/constant-product-amm.git?branch=main#091f11907ee2830b2d8872875f035c93d0c206ea"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
 ]
 
 [[package]]

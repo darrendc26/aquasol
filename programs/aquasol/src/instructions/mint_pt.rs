@@ -5,7 +5,7 @@ use anchor_spl::associated_token::AssociatedToken;
 use crate::asset::*;
 use crate::registry::*;
 use crate::errors::ErrorCode;
-use crate::utils::token_value::*;
+// use crate::utils::token_value::*;
 
 #[derive(Accounts)]
 pub struct MintPt<'info> {
