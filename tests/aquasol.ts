@@ -80,6 +80,24 @@ describe("aquasol", () => {
     );
     feeAccount = feeAta.address;
     console.log("Fee account created: ", feeAccount.toString());
+
+      ytMint = await createMint(
+      provider.connection,      // connection
+      provider.wallet.payer,    // fee payer
+      admin.publicKey,          // mint authority
+      null,                     // freeze authority
+      9                         // decimals
+    );
+    console.log("YT mint created: ", ytMint.toString());
+
+    ptMint = await createMint(
+      provider.connection,      // connection
+      provider.wallet.payer,    // fee payer
+      admin.publicKey,          // mint authority
+      null,                     // freeze authority
+      9                         // decimals
+    );
+    console.log("PT mint created: ", ptMint.toString());
   });
 
   it("Initializes the registry", async () => {
@@ -115,23 +133,7 @@ describe("aquasol", () => {
     );
     console.log("Asset address: ", asset.toString());
 
-    ytMint = await createMint(
-      provider.connection,      // connection
-      provider.wallet.payer,    // fee payer
-      admin.publicKey,          // mint authority
-      null,                     // freeze authority
-      9                         // decimals
-    );
-    console.log("YT mint created: ", ytMint.toString());
-
-    ptMint = await createMint(
-      provider.connection,      // connection
-      provider.wallet.payer,    // fee payer
-      admin.publicKey,          // mint authority
-      null,                     // freeze authority
-      9                         // decimals
-    );
-    console.log("PT mint created: ", ptMint.toString());
+  
 
     try {
       const tx = await program.methods
@@ -156,10 +158,10 @@ describe("aquasol", () => {
   assert.equal(assetAccount.ptMint.toString(), ptMint.toString());
   assert.equal(assetAccount.ytMint.toString(), ytMint.toString());
   assert.equal(assetAccount.totalTokens.toNumber(), 0);
-assert.equal(assetAccount.expectedApy.toNumber(), 8);
-assert.equal(assetAccount.isActive, true);
-assert.equal(assetAccount.yieldIndex.toNumber(), 1_000_000_000);
-assert.ok(assetAccount.maturityTs.sub(new BN(now + 86400)).abs().lte(new BN(1)));
+  assert.equal(assetAccount.expectedApy.toNumber(), 8);
+  assert.equal(assetAccount.isActive, true);
+  assert.equal(assetAccount.yieldIndex.toNumber(), 1_000_000_000);
+  assert.ok(assetAccount.maturityTs.sub(new BN(now + 86400)).abs().lte(new BN(1)));
 
   }catch(err){
     console.error("Error listing asset:", err);
