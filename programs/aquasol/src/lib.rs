@@ -7,12 +7,14 @@ pub mod asset;
 pub mod instructions;
 pub mod errors;
 pub mod utils;
+pub mod user_yt_position;
 
 use instructions::init_registry::*;
 use instructions::list_asset::*;
 use instructions::strip::*;
 use instructions::mint_pt::*;
 use instructions::mint_yt::*;
+use instructions::redeem::*;
 
 declare_id!("C9Quf9b9ww1Rj5Q33ni8Phdyeav6KjteZgZyFBzE6A6R");
 
@@ -25,9 +27,9 @@ pub mod aquasol {
     }
     pub fn list_asset(ctx: Context<ListAsset>, asset_name: String, 
             token_mint: Pubkey, pt_mint: Pubkey, yt_mint: Pubkey, 
-            expected_apy: u64, oracle: Pubkey, duration: i64) -> Result<()> {
+            expected_apy: u64, yield_index: u64, duration: i64) -> Result<()> {
         list_asset_handler(ctx, asset_name, token_mint, pt_mint, 
-            yt_mint, expected_apy, oracle, duration)
+            yt_mint, expected_apy, yield_index, duration)
     }
 
     pub fn strip(ctx: Context<Strip>, amount: u64) -> Result<()> {
@@ -40,5 +42,9 @@ pub mod aquasol {
 
     pub fn mint_yt(ctx: Context<MintYt>, amount: u64) -> Result<()> {
         mint_yt_handler(ctx, amount)
+    }
+
+    pub fn redeem(ctx: Context<Redeem>, amount: u64) -> Result<()> {
+        redeem_handler(ctx, amount)
     }
 }

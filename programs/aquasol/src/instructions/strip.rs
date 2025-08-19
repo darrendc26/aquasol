@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, TokenAccount, transfer, Transfer, mint_to, MintTo, Token};
 use anchor_spl::associated_token::AssociatedToken;
 
+use crate::user_yt_position::*;
 use crate::asset::*;
 use crate::registry::*;
 use crate::errors::ErrorCode;
@@ -21,6 +22,18 @@ pub struct Strip<'info> {
         bump = registry.bump,
     )]
     pub registry: Account<'info, Registry>,
+
+    #[account(
+        init,
+        payer = user,
+        seeds = [
+            b"user_yt_position".as_ref(),
+            user.key().as_ref(),
+        ],
+        bump,
+        space = 8 + UserYtPosition::INIT_SPACE,
+    )]
+    pub user_yt_position: Account<'info, UserYtPosition>,
 
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
@@ -57,7 +70,7 @@ pub fn strip_handler(ctx: Context<Strip>, amount: u64) -> Result<()> {
     let user_token_account = &mut ctx.accounts.user_token_account;
     let user_pt_account = &mut ctx.accounts.user_pt_account;
     let user_yt_account = &mut ctx.accounts.user_yt_account;
-
+    let user_yt_position = &mut ctx.accounts.user_yt_position;
 
     require!(amount > 0, ErrorCode::InvalidAmount);
     require!(asset.is_active, ErrorCode::Inactive);
@@ -98,6 +111,15 @@ pub fn strip_handler(ctx: Context<Strip>, amount: u64) -> Result<()> {
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
     mint_to(cpi_ctx, amount)?;
+
+    // Updating user's position
+    user_yt_position.user = ctx.accounts.user.key();
+    user_yt_position.accrued_yield += 0;
+    user_yt_position.total_yt_tokens += amount;
+    user_yt_position.last_update_ts = now;
+    user_yt_position.bump = ctx.bumps.user_yt_position;
+
+    asset.total_tokens += amount;
 
     Ok(())
 }

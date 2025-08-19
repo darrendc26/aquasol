@@ -11,7 +11,7 @@ pub struct Asset {
     pub total_tokens: u64,
     pub expected_apy: u64,
     pub is_active: bool,
-    pub oracle: Pubkey,
+    // pub oracle: Pubkey,
     pub yield_index: u64,
     pub maturity_ts: i64,
     pub bump: u8,

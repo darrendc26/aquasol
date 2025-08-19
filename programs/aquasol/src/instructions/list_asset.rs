@@ -29,7 +29,7 @@ pub fn list_asset_handler(
     pt_mint: Pubkey, 
     yt_mint: Pubkey, 
     expected_apy: u64,
-    oracle: Pubkey, 
+    yield_index: u64,
     duration: i64
 ) -> Result<()> {
     let asset = &mut ctx.accounts.asset;
@@ -42,8 +42,8 @@ pub fn list_asset_handler(
     asset.expected_apy = expected_apy;
     asset.total_tokens = 0;
     asset.is_active = true;
-    asset.oracle = oracle;
-    asset.yield_index = 1_000_000_000; // 1.0 scaled by 1e9
+    // asset.oracle = oracle;
+    asset.yield_index = yield_index; 
     asset.maturity_ts = now + duration;
     asset.bump = ctx.bumps.asset;
 

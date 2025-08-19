@@ -10,4 +10,6 @@ pub enum ErrorCode {
     Expired,
     #[msg("Asset is not matured")]
     NotMatured,
+    #[msg("Invalid timestamp")]
+    InvalidTimestamp,
 }
