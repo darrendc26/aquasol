@@ -67,26 +67,33 @@ pub struct MintPt<'info> {
     /// CHECK: This will be validated by the AMM program
     pub amm: UncheckedAccount<'info>, // YPT/ Underlying asset pool
 
+    /// CHECK: This is validated by the AMM program for pool authority/signing.
     #[account(mut)]
     pub pool_authority: AccountInfo<'info>,
 
+    /// CHECK: This is validated by the AMM program for pool authority/signing.
     #[account(mut)]
-    pub pool_mint_a: Account<'info, Mint>, // YT token mint
+    pub pool_mint_a: AccountInfo<'info>, // YT token mint
 
+    /// CHECK: This is validated by the AMM program for pool authority/signing.
     #[account(mut)]
-    pub pool_mint_b: Account<'info, Mint>, // Underlying asset mint
+    pub pool_mint_b: AccountInfo<'info>, // Underlying asset mint
 
+    /// CHECK: This is validated by the AMM program for pool authority/signing.
     #[account(mut)]
-    pub pool_token_a: Account<'info, TokenAccount>, // AMM's YT token account
+    pub pool_token_a: AccountInfo<'info>, // AMM's YT token account
 
+    /// CHECK: This is validated by the AMM program for pool authority/signing.
     #[account(mut)]
-    pub pool_token_b: Account<'info, TokenAccount>, // AMM's underlying asset account
+    pub pool_token_b: AccountInfo<'info>, // AMM's underlying asset account
 
+    /// CHECK: This is validated by the AMM program for pool authority/signing.
     #[account(mut)]
-    pub trader_token_a: Account<'info, TokenAccount>, // User's YT token account 
+    pub trader_token_a: AccountInfo<'info>, // User's YT token account
 
+    /// CHECK: This is validated by the AMM program for pool authority/signing.
     #[account(mut)]
-    pub trader_token_b: Account<'info, TokenAccount>, // User's underlying asset account 
+    pub trader_token_b: AccountInfo<'info>, // User's underlying asset account
 
     pub amm_program: Program<'info, ConstantProductAmm>,    
 }

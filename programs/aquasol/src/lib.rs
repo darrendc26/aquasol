@@ -26,9 +26,9 @@ pub mod aquasol {
         init_registry_handler(ctx)
     }
     pub fn list_asset(ctx: Context<ListAsset>, asset_name: String, 
-            token_mint: Pubkey, pt_mint: Pubkey, yt_mint: Pubkey, 
+             pt_mint: Pubkey, yt_mint: Pubkey, 
             expected_apy: u64, yield_index: u64, duration: i64) -> Result<()> {
-        list_asset_handler(ctx, asset_name, token_mint, pt_mint, 
+        list_asset_handler(ctx, asset_name, pt_mint, 
             yt_mint, expected_apy, yield_index, duration)
     }
 
