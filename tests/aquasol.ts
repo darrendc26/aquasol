@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Aquasol } from "../target/types/aquasol";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 import { assert } from "chai";
 import { BN } from "bn.js";
 
@@ -23,7 +23,8 @@ describe("aquasol", () => {
   let ytMint: PublicKey;
   let ptMint: PublicKey;
   let asset: PublicKey;
-
+  let vault: PublicKey;
+  let userTokenAccount: PublicKey;
 
   before(async () => {
     // Generate keypairs
@@ -55,36 +56,58 @@ describe("aquasol", () => {
     console.log("User: ", user.publicKey.toString());
 
     // Find registry PDA
-    [registry] = await PublicKey.findProgramAddressSync(
+    const [registryPda, registryBump] = await PublicKey.findProgramAddressSync(
       [Buffer.from("registry")],
       program.programId
     );
+    registry = registryPda;
     console.log("Registry address: ", registry.toString());
 
     // Create liquid mint
     liquidMint = await createMint(
       provider.connection,      // connection
-      provider.wallet.payer,    // fee payer
+      admin,    // fee payer
       admin.publicKey,          // mint authority
       null,                     // freeze authority
       9                         // decimals
     );
     console.log("Liquid mint created: ", liquidMint.toString());
 
+    // FIXED: Remove 'let' to assign to the top-level variable
+    const userTokenAccountInfo = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      user,
+      liquidMint,
+      user.publicKey,          // owner of the fee account
+    );
+    userTokenAccount = userTokenAccountInfo.address; // Assign to the top-level variable
+    console.log("User token account created: ", userTokenAccount.toBase58());
+
+    // Mint to user token account
+    await mintTo(
+      provider.connection,      // connection
+      admin,    // fee payer
+      liquidMint,               // mint
+      userTokenAccount,         // destination
+      admin,          // mint authority
+      1000000000                // amount
+    );
+    console.log("Minted tokens to user account: ", userTokenAccount.toBase58());
+
     // Create fee ATA for the protocol
     const feeAta = await getOrCreateAssociatedTokenAccount(
       provider.connection,
-      provider.wallet.payer,
+     admin,
       liquidMint,
       admin.publicKey,          // owner of the fee account
     );
     feeAccount = feeAta.address;
     console.log("Fee account created: ", feeAccount.toString());
 
-      ytMint = await createMint(
+    ytMint = await createMint(
       provider.connection,      // connection
-      provider.wallet.payer,    // fee payer
-      admin.publicKey,          // mint authority
+      admin,    // fee payer
+      registry,          // mint authority
       null,                     // freeze authority
       9                         // decimals
     );
@@ -92,8 +115,8 @@ describe("aquasol", () => {
 
     ptMint = await createMint(
       provider.connection,      // connection
-      provider.wallet.payer,    // fee payer
-      admin.publicKey,          // mint authority
+      admin,    // fee payer
+      registry,          // mint authority
       null,                     // freeze authority
       9                         // decimals
     );
@@ -133,40 +156,117 @@ describe("aquasol", () => {
     );
     console.log("Asset address: ", asset.toString());
 
-  
+    try {
+      const tx = await program.methods
+        .listAsset(
+          "aqSOL",          // asset_name: string
+          ptMint,           // pt_mint: PublicKey
+          ytMint,           // yt_mint: PublicKey
+          new BN(8),        // expected_apy: u64
+          new BN(1000000000), // yield_index: u64
+          new BN(86400)     // duration: i64
+        )
+        .accounts({
+          admin: admin.publicKey,
+          tokenMint: liquidMint,    
+        }).signers([admin])
+        .rpc();
+
+      const assetAccount = await program.account.asset.fetch(asset);
+
+      assert.equal(assetAccount.name, "aqSOL");
+      assert.equal(assetAccount.tokenMint.toString(), liquidMint.toString());
+      assert.equal(assetAccount.ptMint.toString(), ptMint.toString());
+      assert.equal(assetAccount.ytMint.toString(), ytMint.toString());
+      assert.equal(assetAccount.totalTokens.toNumber(), 0);
+      assert.equal(assetAccount.expectedApy.toNumber(), 8);
+      assert.equal(assetAccount.isActive, true);
+      assert.equal(assetAccount.yieldIndex.toNumber(), 1_000_000_000);
+      assert.ok(assetAccount.maturityTs.sub(new BN(now + 86400)).abs().lte(new BN(1)));
+
+    } catch(err) {
+      console.error("Error listing asset:", err);
+      throw err;
+    }
+  });
+
+  it("Strips an asset", async () => {
+    let now = Math.floor(Date.now() / 1000);
+    const [userYtPosition] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("user_yt_position"), user.publicKey.toBuffer()],
+      program.programId
+    );
+    console.log("User YT position address: ", userYtPosition.toString());
+
+    const [registry] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("registry")],
+      program.programId
+    );
+    console.log("Registry address: ", registry.toString());
+
+    const [userYtAccount] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("user_yt_account"), user.publicKey.toBuffer()],
+      program.programId
+    );
+    console.log("User YT account address: ", userYtAccount.toString());
+
+    const [userPtAccount] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("user_pt_account"), user.publicKey.toBuffer()],
+      program.programId
+    );
+    console.log("User PT account address: ", userPtAccount.toString());
+
+    
+    const vaultAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      admin, // fee payer
+      liquidMint,
+      registry, // owner (the PDA)
+      true // allowOwnerOffCurve - required for PDA owners (true)
+    );
+    vault = vaultAta.address;
+    console.log("Vault ATA address: ", vault.toString());
 
     try {
       const tx = await program.methods
-  .listAsset(
-    "aqSOL",          // asset_name: string
-    ptMint,           // pt_mint: PublicKey
-    ytMint,           // yt_mint: PublicKey
-    new BN(8),        // expected_apy: u64
-    new BN(1000000000), // yield_index: u64
-    new BN(86400)     // duration: i64
-  )
-  .accounts({
-    admin: admin.publicKey,
-    tokenMint: liquidMint,    
-  }).signers([admin])
-  .rpc();
+        .strip(new BN(1000000000))
+        .accounts({
+          user: user.publicKey,
+          asset: asset,
+          // registry: registry,
+          // userYtPosition: userYtPosition,
+          userTokenAccount: userTokenAccount, 
+          vault: vault,
+          // userPtAccount: userPtAccount,
+          ptMint: ptMint,
+          // userYtAccount: userYtAccount,
+          ytMint: ytMint,
+          // tokenProgram: TOKEN_PROGRAM_ID,
+          // associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          // systemProgram: SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
 
-  const assetAccount = await program.account.asset.fetch(asset);
+      const userYtPositionAccount = await program.account.userYtPosition.fetch(userYtPosition);
+      assert.equal(userYtPositionAccount.user.toString(), user.publicKey.toString());
+      assert.equal(userYtPositionAccount.totalYtTokens.toNumber(), 1000000000);
+      assert.equal(userYtPositionAccount.accruedYield.toNumber(), 0);
+      assert.equal(userYtPositionAccount.lastUpdateTs.toNumber(), now);
 
-  assert.equal(assetAccount.name, "aqSOL");
-  assert.equal(assetAccount.tokenMint.toString(), liquidMint.toString());
-  assert.equal(assetAccount.ptMint.toString(), ptMint.toString());
-  assert.equal(assetAccount.ytMint.toString(), ytMint.toString());
-  assert.equal(assetAccount.totalTokens.toNumber(), 0);
-  assert.equal(assetAccount.expectedApy.toNumber(), 8);
-  assert.equal(assetAccount.isActive, true);
-  assert.equal(assetAccount.yieldIndex.toNumber(), 1_000_000_000);
-  assert.ok(assetAccount.maturityTs.sub(new BN(now + 86400)).abs().lte(new BN(1)));
+    const finalUserTokenBalance = await connection.getTokenAccountBalance(userTokenAccount);
+    const vaultBalance = await connection.getTokenAccountBalance(vault);
+    const userPtAccountBalance = await connection.getTokenAccountBalance(userPtAccount);
+    const userYtAccountBalance = await connection.getTokenAccountBalance(userYtAccount);
 
-  }catch(err){
-    console.error("Error listing asset:", err);
-    throw err;
-  }
+      assert.equal(userYtAccountBalance.value.amount, "1000000000");
+      assert.equal(vaultBalance.value.amount, "1000000000");
+      assert.equal(userPtAccountBalance.value.amount, "1000000000");
+      assert.equal(finalUserTokenBalance.value.amount, "0");
+            
+    } catch (err) {
+      console.error("Error stripping asset:", err);
+      throw err;
+    }
   });
-
 });

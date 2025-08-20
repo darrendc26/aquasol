@@ -43,20 +43,32 @@ pub struct Strip<'info> {
 
     #[account(init_if_needed,
         payer = user,
-        associated_token::mint = pt_mint,
-        associated_token::authority = user,
+        seeds = [
+            b"user_pt_account".as_ref(),
+            user.key().as_ref(),
+        ],
+        bump,
+        token::mint = pt_mint,
+        token::authority = user,
     )]
     pub user_pt_account: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     pub pt_mint: Account<'info, Mint>,
 
     #[account(init_if_needed,
         payer = user,
-        associated_token::mint = yt_mint,
-        associated_token::authority = user,
+        seeds = [
+            b"user_yt_account".as_ref(),
+            user.key().as_ref(),
+        ],
+        bump,
+        token::mint = yt_mint,
+        token::authority = user,
     )]
     pub user_yt_account: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     pub yt_mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
