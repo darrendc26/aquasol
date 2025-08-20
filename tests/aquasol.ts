@@ -5,6 +5,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 import { assert } from "chai";
 import { BN } from "bn.js";
+import { set } from "@coral-xyz/anchor/dist/cjs/utils/features";
 
 describe("aquasol", () => {
   // Configure the client to use the local cluster.
@@ -25,6 +26,9 @@ describe("aquasol", () => {
   let asset: PublicKey;
   let vault: PublicKey;
   let userTokenAccount: PublicKey;
+  let userYtAccount: PublicKey;
+  let userPtAccount: PublicKey;
+  let YTamm : PublicKey;
 
   before(async () => {
     // Generate keypairs
@@ -73,7 +77,6 @@ describe("aquasol", () => {
     );
     console.log("Liquid mint created: ", liquidMint.toString());
 
-    // FIXED: Remove 'let' to assign to the top-level variable
     const userTokenAccountInfo = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user,
@@ -164,7 +167,7 @@ describe("aquasol", () => {
           ytMint,           // yt_mint: PublicKey
           new BN(8),        // expected_apy: u64
           new BN(1000000000), // yield_index: u64
-          new BN(86400)     // duration: i64
+          new BN(1000)     // duration: i64
         )
         .accounts({
           admin: admin.publicKey,
@@ -181,8 +184,9 @@ describe("aquasol", () => {
       assert.equal(assetAccount.totalTokens.toNumber(), 0);
       assert.equal(assetAccount.expectedApy.toNumber(), 8);
       assert.equal(assetAccount.isActive, true);
+      assert.equal(assetAccount.duration.toNumber(), 1000);
       assert.equal(assetAccount.yieldIndex.toNumber(), 1_000_000_000);
-      assert.ok(assetAccount.maturityTs.sub(new BN(now + 86400)).abs().lte(new BN(1)));
+      assert.ok(assetAccount.maturityTs.sub(new BN(now + 1000)).abs().lte(new BN(1)));
 
     } catch(err) {
       console.error("Error listing asset:", err);
@@ -204,16 +208,18 @@ describe("aquasol", () => {
     );
     console.log("Registry address: ", registry.toString());
 
-    const [userYtAccount] = await PublicKey.findProgramAddressSync(
+    const [userYtAccountATA] = await PublicKey.findProgramAddressSync(
       [Buffer.from("user_yt_account"), user.publicKey.toBuffer()],
       program.programId
     );
+    userYtAccount = userYtAccountATA;
     console.log("User YT account address: ", userYtAccount.toString());
 
-    const [userPtAccount] = await PublicKey.findProgramAddressSync(
+    const [userPtAccountATA] = await PublicKey.findProgramAddressSync(
       [Buffer.from("user_pt_account"), user.publicKey.toBuffer()],
       program.programId
     );
+    userPtAccount = userPtAccountATA;
     console.log("User PT account address: ", userPtAccount.toString());
 
     
@@ -252,7 +258,7 @@ describe("aquasol", () => {
       assert.equal(userYtPositionAccount.user.toString(), user.publicKey.toString());
       assert.equal(userYtPositionAccount.totalYtTokens.toNumber(), 1000000000);
       assert.equal(userYtPositionAccount.accruedYield.toNumber(), 0);
-      assert.equal(userYtPositionAccount.lastUpdateTs.toNumber(), now);
+      assert.ok(userYtPositionAccount.lastUpdateTs.sub(new BN(now)).abs().lte(new BN(1)));
 
     const finalUserTokenBalance = await connection.getTokenAccountBalance(userTokenAccount);
     const vaultBalance = await connection.getTokenAccountBalance(vault);
@@ -263,10 +269,51 @@ describe("aquasol", () => {
       assert.equal(vaultBalance.value.amount, "1000000000");
       assert.equal(userPtAccountBalance.value.amount, "1000000000");
       assert.equal(finalUserTokenBalance.value.amount, "0");
-            
+
     } catch (err) {
       console.error("Error stripping asset:", err);
       throw err;
     }
   });
+
+  it("Claims YT yield", async () => {
+    let now = Math.floor(Date.now() / 1000);
+    const [userYtPosition] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("user_yt_position"), user.publicKey.toBuffer()],
+      program.programId
+    );
+    console.log("User YT position address: ", userYtPosition.toString());
+
+    try {
+     await new Promise((resolve) => setTimeout(resolve, 5000));
+
+await program.methods
+  .claimYield()
+  .accounts({
+    user: user.publicKey,
+    asset: asset,
+    userTokenAccount: userTokenAccount, 
+    vault: vault,
+  })
+  .signers([user])
+  .rpc();
+
+    const userTokenAccountBalance = await connection.getTokenAccountBalance(userTokenAccount);
+    const vaultBalance = await connection.getTokenAccountBalance(vault);
+    const userYtAccountBalance = await connection.getTokenAccountBalance(userYtAccount);
+
+    console.log("User YT account balance: ", userYtAccountBalance.value.amount);
+    console.log("Vault balance: ", vaultBalance.value.amount);
+    console.log("User token account balance: ", userTokenAccountBalance.value.amount);
+
+    assert.ok(userYtAccountBalance.value.uiAmount = 1000000000);
+    assert.ok(vaultBalance.value.uiAmount < 1000000000);
+    assert.ok(userTokenAccountBalance.value.uiAmount > 0);
+  } catch (err) {
+      console.error("Error claiming yield:", err);
+      throw err;
+    }
+  });
+
+  
 });

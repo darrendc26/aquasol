@@ -43,6 +43,7 @@ pub struct ClaimYield<'info> {
     pub system_program: Program<'info, System>,
 }
 
+
 pub fn claim_yield_handler(ctx: Context<ClaimYield>) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
     let asset = &mut ctx.accounts.asset;
@@ -57,40 +58,50 @@ pub fn claim_yield_handler(ctx: Context<ClaimYield>) -> Result<()> {
     let last_update_ts = user_yt_position.last_update_ts;
     require!(now > last_update_ts, ErrorCode::InvalidTimestamp);
 
-    // Yield at last update ts
-    let time_remaining = (maturity_ts.checked_sub(last_update_ts).unwrap()) as u64;
-    let total_tokens = yt_token_amount.checked_mul(expected_apy).unwrap();
-    let yt_token_value_last_ts = total_tokens.checked_mul(time_remaining).unwrap()
-                .checked_div(86400).unwrap();
+    if now >= maturity_ts {
+        let time_remaining_last = (maturity_ts.checked_sub(last_update_ts).unwrap()) as u64;
+        let total_tokens = yt_token_amount.checked_mul(expected_apy).unwrap();
+        let final_yield = total_tokens.checked_mul(time_remaining_last).unwrap()
+                    .checked_div(asset.duration as u64).unwrap();
+        
+        user_yt_position.accrued_yield = user_yt_position.accrued_yield + final_yield;
+    } else {
+   
+        let time_remaining_last = (maturity_ts.checked_sub(last_update_ts).unwrap()) as u64;
+        let total_tokens = yt_token_amount.checked_mul(expected_apy).unwrap();
+        let yt_token_value_last_ts = total_tokens.checked_mul(time_remaining_last).unwrap()
+                    .checked_div(asset.duration as u64).unwrap();
 
-     // Calculate yield now
-    let time_remaining = (maturity_ts.checked_sub(now).unwrap()) as u64;
-    let total_tokens = yt_token_amount.checked_mul(expected_apy).unwrap();
-    let yt_token_value_now = total_tokens.checked_mul(time_remaining).unwrap()
-                .checked_div(86400).unwrap();
+        let time_remaining_now = (maturity_ts.checked_sub(now).unwrap()) as u64;
+        let yt_token_value_now = total_tokens.checked_mul(time_remaining_now).unwrap()
+                    .checked_div(asset.duration as u64).unwrap();
 
-    // Calculate yield accrued
-    let yield_accrued = yt_token_value_now.checked_sub(yt_token_value_last_ts).unwrap();
-    user_yt_position.accrued_yield += yield_accrued;
+        let yield_accrued = yt_token_value_last_ts.checked_sub(yt_token_value_now).unwrap();
+        user_yt_position.accrued_yield = user_yt_position.accrued_yield + yield_accrued;
+    }
 
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        b"registry".as_ref(),
-        &[registry.bump],
-    ]];
+    if user_yt_position.accrued_yield > 0 {
+        let signer_seeds: &[&[&[u8]]] = &[&[
+            b"registry".as_ref(),
+            &[registry.bump],
+        ]];
 
-    let signer = &signer_seeds[..];
+        let signer = &signer_seeds[..];
 
-    // Transfer tokens to user
-    let cpi_accounts = Transfer {
-        from: ctx.accounts.vault.to_account_info(),
-        to: ctx.accounts.user_token_account.to_account_info(),
-        authority: ctx.accounts.registry.to_account_info(),
-    };
-    let cpi_program = ctx.accounts.token_program.to_account_info();
-    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-    transfer(cpi_ctx, yield_accrued)?;
+        // Transfer tokens to user
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.vault.to_account_info(),
+            to: ctx.accounts.user_token_account.to_account_info(),
+            authority: ctx.accounts.registry.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        transfer(cpi_ctx, user_yt_position.accrued_yield)?;
 
-    msg!("Successfully claimed yield");
+        msg!("Successfully claimed yield: {}", user_yt_position.accrued_yield);
+    } else {
+        msg!("No yield to claim");
+    }
 
     user_yt_position.last_update_ts = now;
     user_yt_position.accrued_yield = 0;

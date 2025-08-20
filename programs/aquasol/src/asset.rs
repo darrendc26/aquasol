@@ -13,6 +13,7 @@ pub struct Asset {
     pub is_active: bool,
     // pub oracle: Pubkey,
     pub yield_index: u64,
+    pub duration: i64,
     pub maturity_ts: i64,
     pub bump: u8,
 }

@@ -45,11 +45,17 @@ pub struct MintPt<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        associated_token::mint = yt_mint,
-        associated_token::authority = user,
+        seeds = [
+            b"yt_escrow".as_ref(),
+            user.key().as_ref(),
+        ],
+        bump,
+        token::mint = yt_mint,
+        token::authority = user,
     )]
     pub yt_escrow: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     pub pt_mint: Account<'info, Mint>,
 
     // #[account(init_if_needed,
@@ -58,6 +64,7 @@ pub struct MintPt<'info> {
     //     associated_token::authority = user,
     // )]
     // pub user_yt_account: Account<'info, TokenAccount>,
+    #[account(mut)]
     pub yt_mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,

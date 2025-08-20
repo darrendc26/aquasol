@@ -15,6 +15,7 @@ use instructions::strip::*;
 use instructions::mint_pt::*;
 use instructions::mint_yt::*;
 use instructions::redeem::*;
+use instructions::claim_yield::*;
 
 declare_id!("C9Quf9b9ww1Rj5Q33ni8Phdyeav6KjteZgZyFBzE6A6R");
 
@@ -46,5 +47,9 @@ pub mod aquasol {
 
     pub fn redeem(ctx: Context<Redeem>, amount: u64) -> Result<()> {
         redeem_handler(ctx, amount)
+    }
+
+    pub fn claim_yield(ctx: Context<ClaimYield>) -> Result<()> {
+        claim_yield_handler(ctx)
     }
 }

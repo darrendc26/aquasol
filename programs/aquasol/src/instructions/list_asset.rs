@@ -40,7 +40,7 @@ pub fn list_asset_handler(
     asset.expected_apy = expected_apy;
     asset.total_tokens = 0;
     asset.is_active = true;
-    // asset.oracle = oracle;
+    asset.duration = duration;
     asset.yield_index = yield_index; 
     asset.maturity_ts = now + duration;
     asset.bump = ctx.bumps.asset;
