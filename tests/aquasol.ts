@@ -167,7 +167,7 @@ describe("aquasol", () => {
           ytMint,           // yt_mint: PublicKey
           new BN(8),        // expected_apy: u64
           new BN(1000000000), // yield_index: u64
-          new BN(1000)     // duration: i64
+          new BN(10)     // duration: i64
         )
         .accounts({
           admin: admin.publicKey,
@@ -184,9 +184,9 @@ describe("aquasol", () => {
       assert.equal(assetAccount.totalTokens.toNumber(), 0);
       assert.equal(assetAccount.expectedApy.toNumber(), 8);
       assert.equal(assetAccount.isActive, true);
-      assert.equal(assetAccount.duration.toNumber(), 1000);
+      assert.equal(assetAccount.duration.toNumber(), 10);
       assert.equal(assetAccount.yieldIndex.toNumber(), 1_000_000_000);
-      assert.ok(assetAccount.maturityTs.sub(new BN(now + 1000)).abs().lte(new BN(1)));
+      assert.ok(assetAccount.maturityTs.sub(new BN(now + 10)).abs().lte(new BN(1)));
 
     } catch(err) {
       console.error("Error listing asset:", err);
@@ -233,6 +233,18 @@ describe("aquasol", () => {
     vault = vaultAta.address;
     console.log("Vault ATA address: ", vault.toString());
 
+
+    await mintTo(
+      provider.connection,      // connection
+      admin,    // fee payer
+      liquidMint,               // mint
+      vault,         // destination
+      admin,          // mint authority
+      10000000000                // amount
+    );
+    console.log("Minted tokens to vault: ", vault.toBase58());
+
+
     try {
       const tx = await program.methods
         .strip(new BN(1000000000))
@@ -266,7 +278,7 @@ describe("aquasol", () => {
     const userYtAccountBalance = await connection.getTokenAccountBalance(userYtAccount);
 
       assert.equal(userYtAccountBalance.value.amount, "1000000000");
-      assert.equal(vaultBalance.value.amount, "1000000000");
+      assert.equal(vaultBalance.value.amount, "11000000000");
       assert.equal(userPtAccountBalance.value.amount, "1000000000");
       assert.equal(finalUserTokenBalance.value.amount, "0");
 
@@ -306,7 +318,7 @@ await program.methods
     console.log("Vault balance: ", vaultBalance.value.amount);
     console.log("User token account balance: ", userTokenAccountBalance.value.amount);
 
-    assert.ok(userYtAccountBalance.value.uiAmount = 1000000000);
+    assert.ok(userYtAccountBalance.value.uiAmount = 11000000000);
     assert.ok(vaultBalance.value.uiAmount < 1000000000);
     assert.ok(userTokenAccountBalance.value.uiAmount > 0);
   } catch (err) {
@@ -315,5 +327,36 @@ await program.methods
     }
   });
 
+  it("Redeems an asset", async () => {
+    const [userPtAccountATA] = await PublicKey.findProgramAddressSync(
+      [Buffer.from("user_pt_account"), user.publicKey.toBuffer()],
+      program.programId
+    );
+    userPtAccount = userPtAccountATA;
+    console.log("User PT account address: ", userPtAccount.toString());
+    let now = Math.floor(Date.now() / 1000);
+
+    
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 15000));
+      await program.methods
+      .redeem(new BN(1000000000))
+      .accounts({
+        user: user.publicKey,
+        asset: asset,
+        userTokenAccount: userTokenAccount, 
+        vault: vault,
+        ptMint: ptMint,
+        // userPtAccount: userPtAccount,
+      })
+      .signers([user])
+      .rpc();
+    } catch (err) {
+      console.error("Error redeeming asset:", err);
+      throw err;
+    }
+
+  });
   
 });

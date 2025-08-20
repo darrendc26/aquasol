@@ -28,13 +28,18 @@ pub struct Redeem<'info> {
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
 
-    #[account(init_if_needed,
-        payer = user,
-        associated_token::mint = pt_mint,
-        associated_token::authority = user,
+    #[account(mut,
+        seeds = [
+            b"user_pt_account".as_ref(),
+            user.key().as_ref(),
+        ],
+        bump,
+        token::mint = pt_mint,
+        token::authority = registry,
     )]
     pub user_pt_account: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     pub pt_mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,

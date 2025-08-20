@@ -21,4 +21,3 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-spl = "0.31.1"
 anchor-lang = {version = "0.31.1", features = ["init-if-needed"]}
 
-constant-product-amm = { git = "https://github.com/darrendc26/constant-product-amm.git", branch = "main", features = ["cpi"]  }

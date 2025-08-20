@@ -49,7 +49,7 @@ pub struct Strip<'info> {
         ],
         bump,
         token::mint = pt_mint,
-        token::authority = user,
+        token::authority = registry,
     )]
     pub user_pt_account: Account<'info, TokenAccount>,
 
@@ -64,7 +64,7 @@ pub struct Strip<'info> {
         ],
         bump,
         token::mint = yt_mint,
-        token::authority = user,
+        token::authority = registry,
     )]
     pub user_yt_account: Account<'info, TokenAccount>,
 

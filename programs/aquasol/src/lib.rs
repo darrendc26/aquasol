@@ -12,10 +12,9 @@ pub mod user_yt_position;
 use instructions::init_registry::*;
 use instructions::list_asset::*;
 use instructions::strip::*;
-use instructions::mint_pt::*;
-use instructions::mint_yt::*;
 use instructions::redeem::*;
 use instructions::claim_yield::*;
+
 
 declare_id!("C9Quf9b9ww1Rj5Q33ni8Phdyeav6KjteZgZyFBzE6A6R");
 
@@ -35,14 +34,6 @@ pub mod aquasol {
 
     pub fn strip(ctx: Context<Strip>, amount: u64) -> Result<()> {
         strip_handler(ctx, amount)
-    }
-
-    pub fn mint_pt(ctx: Context<MintPt>, amount: u64) -> Result<()> {
-        mint_pt_handler(ctx, amount)
-    }
-
-    pub fn mint_yt(ctx: Context<MintYt>, amount: u64) -> Result<()> {
-        mint_yt_handler(ctx, amount)
     }
 
     pub fn redeem(ctx: Context<Redeem>, amount: u64) -> Result<()> {
